@@ -44,6 +44,12 @@ impl Component for Renderable {
   type Storage = VecStorage<Self>;
 }
 
+pub struct Position(pub Point2<f32>);
+
+impl Component for Position {
+  type Storage = VecStorage<Self>;
+}
+
 pub struct RenderingSystem<'c> {
   ctx: &'c mut Context,
 }
@@ -55,15 +61,26 @@ impl<'c> RenderingSystem<'c> {
 }
 
 impl<'a, 'c> System<'a> for RenderingSystem<'c> {
-  type SystemData = (Read<'a, ScreenSize>, ReadStorage<'a, Renderable>);
+  type SystemData = (
+    Entities<'a>,
+    Read<'a, ScreenSize>,
+    ReadStorage<'a, Renderable>,
+    ReadStorage<'a, Position>,
+  );
 
   fn run(&mut self, data: Self::SystemData) {
-    let (screen_size, renderables) = data;
+    let (entities, screen_size, renderables, positions) = data;
 
     let screen_size = screen_size.0;
 
-    for renderable in renderables.join() {
+    for (entitie, renderable) in (&*entities, &renderables).join() {
       let mut draw_param = renderable.draw_param.unwrap_or_else(DrawParam::default);
+
+      if let Some(position) = positions.get(entitie) {
+        // Reassigning "draw_param" because the dest property is using nalgebra
+        // so we can't change it directly
+        draw_param = draw_param.dest(position.0);
+      }
 
       if let Some(direction) = &renderable.stick_horizontal {
         draw_param.dest.x = match direction {
@@ -110,5 +127,6 @@ pub fn setup<'a, 'b>(
   world: &mut World,
   _dispatcher_builder: &mut DispatcherBuilder<'a, 'b>,
 ) {
+  world.register::<Position>();
   world.register::<Renderable>();
 }
