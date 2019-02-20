@@ -1,3 +1,4 @@
+use crate::camera::{world_to_screen, Camera};
 use crate::resources::ScreenSize;
 use cgmath::{Point2, Vector2};
 use ggez::graphics::{self, spritebatch::SpriteBatch, DrawParam, Image, Mesh, BLACK};
@@ -36,8 +37,6 @@ pub enum VerticalDirection {
 pub struct Renderable {
   pub render_type: RenderType,
   pub draw_param: Option<DrawParam>,
-  pub stick_horizontal: Option<HorizontalDirection>,
-  pub stick_vertical: Option<VerticalDirection>,
 }
 
 impl Component for Renderable {
@@ -48,6 +47,16 @@ pub struct Position(pub Point2<f32>);
 
 impl Component for Position {
   type Storage = VecStorage<Self>;
+}
+
+#[derive(Default)]
+pub struct UiElement {
+  pub stick_horizontal: Option<HorizontalDirection>,
+  pub stick_vertical: Option<VerticalDirection>,
+}
+
+impl Component for UiElement {
+  type Storage = DenseVecStorage<Self>;
 }
 
 pub struct RenderingSystem<'c> {
@@ -61,63 +70,82 @@ impl<'c> RenderingSystem<'c> {
 }
 
 impl<'a, 'c> System<'a> for RenderingSystem<'c> {
+  #[allow(clippy::type_complexity)]
   type SystemData = (
     Entities<'a>,
     Read<'a, ScreenSize>,
     ReadStorage<'a, Renderable>,
+    ReadStorage<'a, UiElement>,
     ReadStorage<'a, Position>,
+    ReadStorage<'a, Camera>,
   );
 
   fn run(&mut self, data: Self::SystemData) {
-    let (entities, screen_size, renderables, positions) = data;
+    let (entities, screen_size, renderables, ui_elements, positions, cameras) = data;
 
     let screen_size = screen_size.0;
 
-    for (entitie, renderable) in (&*entities, &renderables).join() {
-      let mut draw_param = renderable.draw_param.unwrap_or_else(DrawParam::default);
+    for (camera, camera_position) in (&cameras, &positions).join() {
+      let camera_position = camera_position.0;
 
-      if let Some(position) = positions.get(entitie) {
-        // Reassigning "draw_param" because the dest property is using nalgebra
-        // so we can't change it directly
-        draw_param = draw_param.dest(position.0);
-      }
+      for (entitie, renderable) in (&*entities, &renderables).join() {
+        let mut draw_param = renderable.draw_param.unwrap_or_else(DrawParam::default);
 
-      if let Some(direction) = &renderable.stick_horizontal {
-        draw_param.dest.x = match direction {
-          HorizontalDirection::Left => 0.0,
-          HorizontalDirection::Middle => screen_size.x / 2.0,
-          HorizontalDirection::Right => screen_size.x,
-        };
-      }
-
-      if let Some(direction) = &renderable.stick_vertical {
-        draw_param.dest.y = match direction {
-          VerticalDirection::Top => 0.0,
-          VerticalDirection::Middle => screen_size.y / 2.0,
-          VerticalDirection::Bottom => screen_size.y,
-        };
-      }
-
-      match &renderable.render_type {
-        RenderType::Image(image) => graphics::draw(self.ctx, image, draw_param).unwrap(),
-        RenderType::SpriteBatch(sprite_batch) => {
-          graphics::draw(self.ctx, sprite_batch, draw_param).unwrap()
+        if let Some(position) = positions.get(entitie) {
+          // Reassigning "draw_param" because the dest property is using
+          // nalgebra so we can't change it directly
+          draw_param = draw_param.dest(position.0);
         }
-        RenderType::Mesh(mesh) => graphics::draw(self.ctx, mesh, draw_param).unwrap(),
-        RenderType::ColumnGraph { columns, size } => {
-          let mut spritebatch = SpriteBatch::new(Image::solid(self.ctx, 1, BLACK).unwrap());
 
-          for (index, column) in columns.iter().enumerate() {
-            spritebatch.add(
-              draw_param
-                .dest(Point2::new(index as f32 * *size, 0.0))
-                .scale(Vector2::new(*size, -(*column as f32))),
-            );
+        if let Some(ui_element) = &ui_elements.get(entitie) {
+          if let Some(direction) = &ui_element.stick_horizontal {
+            draw_param.dest.x = match direction {
+              HorizontalDirection::Left => 0.0,
+              HorizontalDirection::Middle => screen_size.x / 2.0,
+              HorizontalDirection::Right => screen_size.x,
+            };
           }
 
-          graphics::draw(self.ctx, &spritebatch, draw_param).unwrap();
+          if let Some(direction) = &ui_element.stick_vertical {
+            draw_param.dest.y = match direction {
+              VerticalDirection::Top => 0.0,
+              VerticalDirection::Middle => screen_size.y / 2.0,
+              VerticalDirection::Bottom => screen_size.y,
+            };
+          }
+        } else {
+          draw_param = draw_param
+            .dest(world_to_screen(
+              // TODO: convert from nalgebra to cgmath more efficiently
+              Point2::new(draw_param.dest.coords.x, draw_param.dest.coords.x),
+              camera_position,
+              camera.zoom,
+              screen_size,
+            ))
+            .scale([camera.zoom, camera.zoom]);
         }
-      };
+
+        match &renderable.render_type {
+          RenderType::Image(image) => graphics::draw(self.ctx, image, draw_param).unwrap(),
+          RenderType::SpriteBatch(sprite_batch) => {
+            graphics::draw(self.ctx, sprite_batch, draw_param).unwrap()
+          }
+          RenderType::Mesh(mesh) => graphics::draw(self.ctx, mesh, draw_param).unwrap(),
+          RenderType::ColumnGraph { columns, size } => {
+            let mut spritebatch = SpriteBatch::new(Image::solid(self.ctx, 1, BLACK).unwrap());
+
+            for (index, column) in columns.iter().enumerate() {
+              spritebatch.add(
+                draw_param
+                  .dest(Point2::new(index as f32 * *size, 0.0))
+                  .scale(Vector2::new(*size, -(*column as f32))),
+              );
+            }
+
+            graphics::draw(self.ctx, &spritebatch, draw_param).unwrap();
+          }
+        };
+      }
     }
   }
 }
@@ -129,4 +157,5 @@ pub fn setup<'a, 'b>(
 ) {
   world.register::<Position>();
   world.register::<Renderable>();
+  world.register::<UiElement>();
 }

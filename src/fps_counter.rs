@@ -1,4 +1,4 @@
-use crate::rendering::{HorizontalDirection, RenderType, Renderable, VerticalDirection};
+use crate::rendering::{HorizontalDirection, RenderType, Renderable, UiElement, VerticalDirection};
 use crate::resources::DeltaTime;
 use ggez::{graphics::DrawParam, Context};
 use specs::prelude::*;
@@ -60,6 +60,8 @@ pub fn setup<'a, 'b>(
         columns: Vec::with_capacity(COLUMNS),
         size: COLUMN_WIDTH,
       },
+    })
+    .with(UiElement {
       stick_horizontal: Some(HorizontalDirection::Left),
       stick_vertical: Some(VerticalDirection::Bottom),
     })

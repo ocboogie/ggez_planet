@@ -1,5 +1,6 @@
 #![feature(duration_float)]
 
+mod camera;
 mod fps_counter;
 mod rendering;
 mod resources;
@@ -31,6 +32,7 @@ impl<'a, 'b> MainState<'a, 'b> {
         resources::setup(ctx, &mut world, &mut dispatcher_builder);
         rendering::setup(ctx, &mut world, &mut dispatcher_builder);
         fps_counter::setup(ctx, &mut world, &mut dispatcher_builder);
+        camera::setup(ctx, &mut world, &mut dispatcher_builder);
 
         let dispatcher = dispatcher_builder.build();
 
