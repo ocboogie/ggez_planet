@@ -88,16 +88,16 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
     for (camera, camera_position) in (&cameras, &positions).join() {
       let camera_position = camera_position.0;
 
-      for (entitie, renderable) in (&*entities, &renderables).join() {
+      for (entity, renderable) in (&*entities, &renderables).join() {
         let mut draw_param = renderable.draw_param.unwrap_or_else(DrawParam::default);
 
-        if let Some(position) = positions.get(entitie) {
+        if let Some(position) = positions.get(entity) {
           // Reassigning "draw_param" because the dest property is using
           // nalgebra so we can't change it directly
           draw_param = draw_param.dest(position.0);
         }
 
-        if let Some(ui_element) = &ui_elements.get(entitie) {
+        if let Some(ui_element) = &ui_elements.get(entity) {
           if let Some(direction) = &ui_element.stick_horizontal {
             draw_param.dest.x = match direction {
               HorizontalDirection::Left => 0.0,
