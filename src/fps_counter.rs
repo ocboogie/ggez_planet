@@ -10,7 +10,7 @@ static COLUMN_WIDTH: f32 = 5.0;
 pub struct FpsCounter;
 
 impl Component for FpsCounter {
-  type Storage = VecStorage<Self>;
+  type Storage = NullStorage<Self>;
 }
 
 #[derive(Default)]
