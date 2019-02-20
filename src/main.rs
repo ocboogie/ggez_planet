@@ -6,9 +6,9 @@ mod resources;
 
 use crate::resources::DeltaTime;
 use crate::resources::ScreenSize;
+use cgmath::Vector2;
 use ggez::conf::WindowMode;
 use ggez::graphics;
-use ggez::nalgebra::Vector2;
 use ggez::{event, Context, GameResult};
 use rendering::RenderingSystem;
 use specs::prelude::*;

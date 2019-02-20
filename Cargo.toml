@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 ggez = { git = "https://github.com/ggez/ggez.git" }
 specs = "0.14.3"
+cgmath = { version = "0.17.0", features = ["mint"] }

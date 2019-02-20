@@ -1,6 +1,6 @@
 use crate::resources::ScreenSize;
+use cgmath::{Point2, Vector2};
 use ggez::graphics::{self, spritebatch::SpriteBatch, DrawParam, Image, Mesh, BLACK};
-use ggez::nalgebra::{Point2, Vector2};
 use ggez::Context;
 use specs::prelude::*;
 

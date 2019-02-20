@@ -1,6 +1,6 @@
 use crate::SCREEN_HEIGHT;
 use crate::SCREEN_WIDTH;
-use ggez::nalgebra::Vector2;
+use cgmath::Vector2;
 use ggez::Context;
 use specs::prelude::*;
 
