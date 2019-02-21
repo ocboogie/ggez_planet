@@ -8,20 +8,20 @@ static COLUMNS: usize = 50;
 static COLUMN_WIDTH: f32 = 5.0;
 
 #[derive(Default)]
-pub struct FpsCounter;
+pub struct PerformanceGraph;
 
-impl Component for FpsCounter {
+impl Component for PerformanceGraph {
   type Storage = NullStorage<Self>;
 }
 
 #[derive(Default)]
-pub struct UpdateFps;
+pub struct UpdatePerformanceGraph;
 
-impl<'a> System<'a> for UpdateFps {
+impl<'a> System<'a> for UpdatePerformanceGraph {
   type SystemData = (
     Read<'a, DeltaTime>,
     WriteStorage<'a, ColumnGraph>,
-    ReadStorage<'a, FpsCounter>,
+    ReadStorage<'a, PerformanceGraph>,
   );
 
   fn run(&mut self, data: Self::SystemData) {
@@ -44,13 +44,13 @@ pub fn setup<'a, 'b>(
   world: &mut World,
   dispatcher_builder: &mut DispatcherBuilder<'a, 'b>,
 ) {
-  world.register::<FpsCounter>();
+  world.register::<PerformanceGraph>();
 
-  dispatcher_builder.add(UpdateFps, "update_fps", &[]);
+  dispatcher_builder.add(UpdatePerformanceGraph, "update_performance_graph", &[]);
 
   world
     .create_entity()
-    .with(FpsCounter::default())
+    .with(PerformanceGraph::default())
     .with(ColumnGraph {
       columns: Vec::with_capacity(COLUMNS),
       size: COLUMN_WIDTH,
