@@ -1,5 +1,5 @@
 use crate::renderers::column_graph::ColumnGraph;
-use crate::rendering::{HorizontalDirection, UiElement, VerticalDirection};
+use crate::rendering::{Anchor, UiElement};
 use crate::resources::DeltaTime;
 use ggez::Context;
 use specs::prelude::*;
@@ -56,8 +56,7 @@ pub fn setup<'a, 'b>(
       size: COLUMN_WIDTH,
     })
     .with(UiElement {
-      stick_horizontal: Some(HorizontalDirection::Left),
-      stick_vertical: Some(VerticalDirection::Bottom),
+      anchor: Some(Anchor::BottomLeft),
     })
     .build();
 }

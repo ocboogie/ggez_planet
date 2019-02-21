@@ -71,22 +71,6 @@ impl RenderInstruction {
   }
 }
 
-pub enum HorizontalDirection {
-  Left,
-  #[allow(dead_code)]
-  Middle,
-  #[allow(dead_code)]
-  Right,
-}
-
-pub enum VerticalDirection {
-  #[allow(dead_code)]
-  Top,
-  #[allow(dead_code)]
-  Middle,
-  Bottom,
-}
-
 pub struct Renderable {
   pub instruction: RenderInstruction,
   pub draw_param: Option<DrawParam>,
@@ -111,10 +95,50 @@ impl Component for Position {
   type Storage = VecStorage<Self>;
 }
 
+#[derive(Copy, Clone)]
+pub enum Anchor {
+  TopLeft,
+  TopCenter,
+  TopRight,
+
+  CenterLeft,
+  Center,
+  CenterRight,
+
+  BottomLeft,
+  BottomCenter,
+  BottomRight,
+}
+
+impl Anchor {
+  pub fn get_postion(self, bounds: Vector2<f32>) -> Point2<f32> {
+    use Anchor::*;
+
+    match self {
+      TopLeft => Point2::new(0.0, 0.0),
+      TopCenter => Point2::new(bounds.x / 2.0, 0.0),
+      TopRight => Point2::new(bounds.x, 0.0),
+
+      CenterLeft => Point2::new(0.0, bounds.y / 2.0),
+      Center => Point2::new(bounds.x / 2.0, bounds.y / 2.0),
+      CenterRight => Point2::new(bounds.x, bounds.y / 2.0),
+
+      BottomLeft => Point2::new(0.0, bounds.y),
+      BottomCenter => Point2::new(bounds.x / 2.0, bounds.y),
+      BottomRight => Point2::new(bounds.x, bounds.y),
+    }
+  }
+}
+
+impl Default for Anchor {
+  fn default() -> Self {
+    Anchor::Center
+  }
+}
+
 #[derive(Default)]
 pub struct UiElement {
-  pub stick_horizontal: Option<HorizontalDirection>,
-  pub stick_vertical: Option<VerticalDirection>,
+  pub anchor: Option<Anchor>,
 }
 
 impl Component for UiElement {
@@ -158,35 +182,20 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
       for (entity, mut renderable) in renderable_entities {
         let mut draw_param = renderable.draw_param.unwrap_or_else(DrawParam::default);
 
-        if let Some(position) = positions.get(entity) {
-          draw_param.dest = position.0;
+        if let Some(ui_element) = &ui_elements.get(entity) {
+          draw_param.dest = ui_element
+            .anchor
+            .unwrap_or_default()
+            .get_postion(screen_size);
+        } else {
+          draw_param.dest =
+            world_to_screen(draw_param.dest, camera_position, camera.zoom, screen_size);
+
+          draw_param.scale = Vector2::repeat(camera.zoom);
         }
 
-        if let Some(ui_element) = &ui_elements.get(entity) {
-          if let Some(direction) = &ui_element.stick_horizontal {
-            draw_param.dest.x = match direction {
-              HorizontalDirection::Left => 0.0,
-              HorizontalDirection::Middle => screen_size.x / 2.0,
-              HorizontalDirection::Right => screen_size.x,
-            };
-          }
-
-          if let Some(direction) = &ui_element.stick_vertical {
-            draw_param.dest.y = match direction {
-              VerticalDirection::Top => 0.0,
-              VerticalDirection::Middle => screen_size.y / 2.0,
-              VerticalDirection::Bottom => screen_size.y,
-            };
-          }
-        } else {
-          draw_param = draw_param
-            .dest(world_to_screen(
-              draw_param.dest,
-              camera_position,
-              camera.zoom,
-              screen_size,
-            ))
-            .scale(Vector2::repeat(camera.zoom));
+        if let Some(position) = positions.get(entity) {
+          draw_param.dest = position.0;
         }
 
         renderable.draw_param = Some(draw_param);
