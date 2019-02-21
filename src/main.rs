@@ -3,6 +3,7 @@
 mod debug;
 mod graphics;
 mod input;
+mod painter;
 mod renderers;
 
 use crate::{
@@ -85,9 +86,14 @@ impl<'a, 'b> MainState<'a, 'b> {
         mouse_buttons.update();
     }
 
-    fn update_mouse_motion(&mut self, mouse_motion: Option<(Vector2<f32>)>) {
+    fn update_mouse_motion(&mut self, mouse_motion: Option<Vector2<f32>>) {
         let mut mouse_motion_res = self.world.write_resource::<MouseMotion>();
-        mouse_motion_res.0 = mouse_motion;
+
+        mouse_motion_res.0 = mouse_motion.map(|mouse_motion| {
+            mouse_motion_res
+                .0
+                .map_or(mouse_motion, |motion| motion + mouse_motion)
+        });
     }
 
     fn update_mouse_wheel(&mut self, mouse_wheel: Option<(Vector2<f32>)>) {
