@@ -25,13 +25,14 @@ impl ImageBuilder {
 pub enum RenderInstruction {
   #[allow(dead_code)]
   Image(ImageBuilder),
-  #[allow(dead_code)]
   SpriteBatch {
     image_builder: ImageBuilder,
     sprites: Vec<DrawParam>,
   },
   #[allow(dead_code)]
   Mesh(MeshBuilder),
+  #[allow(dead_code)]
+  Multi(Vec<RenderInstruction>),
 }
 
 impl RenderInstruction {
@@ -58,6 +59,11 @@ impl RenderInstruction {
       Mesh(mesh_builder) => {
         let mesh = mesh_builder.build(ctx)?;
         graphics::draw(ctx, &mesh, draw_param)?;
+      }
+      Multi(instructions) => {
+        for instruction in instructions {
+          instruction.render(ctx, draw_param)?;
+        }
       }
     };
 
