@@ -1,6 +1,7 @@
 #![feature(duration_float)]
 
 mod camera;
+mod fps_display;
 mod performance_graph;
 mod renderers;
 mod rendering;
@@ -39,6 +40,7 @@ impl<'a, 'b> MainState<'a, 'b> {
 
         renderers::setup(ctx, &mut world, &mut dispatcher_builder);
 
+        fps_display::setup(ctx, &mut world, &mut dispatcher_builder);
         performance_graph::setup(ctx, &mut world, &mut dispatcher_builder);
 
         let dispatcher = dispatcher_builder.build();
