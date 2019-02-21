@@ -57,6 +57,7 @@ pub fn setup<'a, 'b>(
     })
     .with(UiElement {
       anchor: Some(Anchor::BottomLeft),
+      origin: Some(Anchor::BottomLeft),
     })
     .build();
 }

@@ -1,6 +1,6 @@
 use crate::camera::{world_to_screen, Camera};
 use crate::resources::ScreenSize;
-use ggez::graphics::{self, spritebatch, Color, DrawParam, Drawable, Image, MeshBuilder};
+use ggez::graphics::{self, spritebatch, Color, DrawParam, Drawable, Image, MeshBuilder, Rect};
 use ggez::nalgebra::{Point2, Vector2};
 use ggez::{Context, GameResult};
 use specs::prelude::*;
@@ -88,21 +88,21 @@ pub enum Anchor {
 }
 
 impl Anchor {
-  pub fn get_postion(self, bounds: Vector2<f32>) -> Point2<f32> {
+  pub fn get_postion(self, bounds: Rect) -> Point2<f32> {
     use Anchor::*;
 
     match self {
-      TopLeft => Point2::new(0.0, 0.0),
-      TopCenter => Point2::new(bounds.x / 2.0, 0.0),
-      TopRight => Point2::new(bounds.x, 0.0),
+      TopLeft => Point2::new(bounds.x, bounds.y),
+      TopCenter => Point2::new(bounds.x + bounds.w / 2.0, bounds.y),
+      TopRight => Point2::new(bounds.x + bounds.w, bounds.y),
 
-      CenterLeft => Point2::new(0.0, bounds.y / 2.0),
-      Center => Point2::new(bounds.x / 2.0, bounds.y / 2.0),
-      CenterRight => Point2::new(bounds.x, bounds.y / 2.0),
+      CenterLeft => Point2::new(bounds.x, bounds.y + bounds.h / 2.0),
+      Center => Point2::new(bounds.x + bounds.w / 2.0, bounds.y + bounds.h / 2.0),
+      CenterRight => Point2::new(bounds.x + bounds.w, bounds.y + bounds.h / 2.0),
 
-      BottomLeft => Point2::new(0.0, bounds.y),
-      BottomCenter => Point2::new(bounds.x / 2.0, bounds.y),
-      BottomRight => Point2::new(bounds.x, bounds.y),
+      BottomLeft => Point2::new(bounds.x, bounds.y + bounds.h),
+      BottomCenter => Point2::new(bounds.x + bounds.w / 2.0, bounds.y + bounds.h),
+      BottomRight => Point2::new(bounds.x + bounds.w, bounds.y + bounds.h),
     }
   }
 }
@@ -116,6 +116,7 @@ impl Default for Anchor {
 #[derive(Default)]
 pub struct UiElement {
   pub anchor: Option<Anchor>,
+  pub origin: Option<Anchor>,
 }
 
 impl Component for UiElement {
@@ -159,11 +160,23 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
       for (entity, renderable) in renderable_entities {
         let mut draw_param = renderable.draw_param.unwrap_or_else(DrawParam::default);
 
+        let drawable = renderable.instruction.construct(self.ctx).unwrap();
+
         if let Some(ui_element) = &ui_elements.get(entity) {
-          draw_param.dest = ui_element
-            .anchor
-            .unwrap_or_default()
-            .get_postion(screen_size);
+          draw_param.dest = ui_element.anchor.unwrap_or_default().get_postion(Rect::new(
+            0.0,
+            0.0,
+            screen_size.x,
+            screen_size.y,
+          ));
+
+          if let Some(dimensions) = drawable.dimensions(self.ctx) {
+            draw_param.dest -= ui_element
+              .origin
+              .unwrap_or_default()
+              .get_postion(dimensions)
+              .coords;
+          }
         } else {
           draw_param.dest =
             world_to_screen(draw_param.dest, camera_position, camera.zoom, screen_size);
@@ -175,7 +188,6 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
           draw_param.dest = position.0;
         }
 
-        let drawable = renderable.instruction.construct(self.ctx).unwrap();
         drawable.draw(self.ctx, draw_param).unwrap();
       }
     }
