@@ -6,11 +6,12 @@ mod renderers;
 mod rendering;
 mod resources;
 
-use crate::resources::{DeltaTime, MousePosition, ScreenSize};
+use crate::resources::{DeltaTime, InputState, Keys, MouseButtons, MousePosition, ScreenSize};
 use cgmath::Vector2;
 use ggez::conf::WindowMode;
 use ggez::graphics;
-use ggez::input::mouse;
+use ggez::input::keyboard::{KeyCode, KeyMods};
+use ggez::input::mouse::{self, MouseButton};
 use ggez::{event, Context, GameResult};
 use rendering::RenderingSystem;
 use specs::prelude::*;
@@ -64,6 +65,16 @@ impl<'a, 'b> MainState<'a, 'b> {
         screen_size.0 = Vector2::new(width, height);
     }
 
+    fn update_keys(&mut self) {
+        let mut keys = self.world.write_resource::<Keys>();
+        keys.update();
+    }
+
+    fn update_mouse_buttons(&mut self) {
+        let mut mouse_buttons = self.world.write_resource::<MouseButtons>();
+        mouse_buttons.update();
+    }
+
     fn render(&mut self, ctx: &mut Context) {
         let mut rendering_system = RenderingSystem::new(ctx);
         rendering_system.run_now(&self.world.res);
@@ -76,6 +87,9 @@ impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
         self.update_mouse_position(ctx);
 
         self.dispatcher.dispatch(&self.world.res);
+
+        self.update_keys();
+        self.update_mouse_buttons();
 
         self.last_frame = Instant::now();
 
@@ -95,6 +109,38 @@ impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
         let _ = graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height));
 
         self.update_screen_size(width, height);
+    }
+
+    fn mouse_button_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        button: MouseButton,
+        _x: f32,
+        _y: f32,
+    ) {
+        let mut mouse_buttons = self.world.write_resource::<MouseButtons>();
+        mouse_buttons.0.insert(button, InputState::Pressed);
+    }
+
+    fn mouse_button_up_event(&mut self, _ctx: &mut Context, button: MouseButton, _x: f32, _y: f32) {
+        let mut mouse_buttons = self.world.write_resource::<MouseButtons>();
+        mouse_buttons.0.insert(button, InputState::Released);
+    }
+
+    fn key_down_event(
+        &mut self,
+        _ctx: &mut Context,
+        keycode: KeyCode,
+        _keymods: KeyMods,
+        _repeat: bool,
+    ) {
+        let mut keys = self.world.write_resource::<Keys>();
+        keys.0.insert(keycode, InputState::Pressed);
+    }
+
+    fn key_up_event(&mut self, _ctx: &mut Context, keycode: KeyCode, _keymods: KeyMods) {
+        let mut keys = self.world.write_resource::<Keys>();
+        keys.0.insert(keycode, InputState::Released);
     }
 }
 

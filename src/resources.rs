@@ -1,8 +1,12 @@
 use crate::SCREEN_HEIGHT;
 use crate::SCREEN_WIDTH;
 use cgmath::{Point2, Vector2};
+use ggez::input::keyboard::KeyCode;
+use ggez::input::mouse::MouseButton;
 use ggez::Context;
 use specs::prelude::*;
+use std::collections::HashMap;
+use std::hash::Hash;
 
 #[derive(Default)]
 pub struct DeltaTime(pub f32);
@@ -23,6 +27,74 @@ impl Default for MousePosition {
   }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum InputState {
+  Pressed,
+  Held,
+  Released,
+}
+
+pub struct InputResource<K: Hash + Eq>(pub HashMap<K, InputState>);
+
+impl<K: Hash + Eq + Copy> Default for InputResource<K> {
+  fn default() -> Self {
+    Self(HashMap::new())
+  }
+}
+
+impl<K: Hash + Eq + Copy> InputResource<K> {
+  pub fn update(&mut self) {
+    self.0 = self
+      .0
+      .iter()
+      .filter_map(|(key, state)| match state {
+        InputState::Released => None,
+        _ => Some((*key, InputState::Held)),
+      })
+      .collect::<HashMap<K, InputState>>();
+  }
+
+  /// Returns true if the key specified was pressed down this frame or is being held
+  pub fn is_down(&self, input: &K) -> bool {
+    self
+      .0
+      .get(input)
+      .filter(|state| **state != InputState::Released)
+      .is_some()
+  }
+
+  /// Returns true if the key specified was just pressed down this frame
+  pub fn is_pressed(&self, input: &K) -> bool {
+    self
+      .0
+      .get(input)
+      .filter(|state| **state == InputState::Pressed)
+      .is_some()
+  }
+
+  /// Returns true if the key specified is held this frame
+  pub fn is_held(&self, input: &K) -> bool {
+    self
+      .0
+      .get(input)
+      .filter(|state| **state == InputState::Held)
+      .is_some()
+  }
+
+  /// Returns true if the key specified was released this frame
+  pub fn is_released(&self, input: &K) -> bool {
+    self
+      .0
+      .get(input)
+      .filter(|state| **state == InputState::Released)
+      .is_some()
+  }
+}
+
+pub type Keys = InputResource<KeyCode>;
+
+pub type MouseButtons = InputResource<MouseButton>;
+
 pub fn setup<'a, 'b>(
   _ctx: &mut Context,
   world: &mut World,
@@ -31,4 +103,6 @@ pub fn setup<'a, 'b>(
   world.add_resource(DeltaTime::default());
   world.add_resource(ScreenSize::default());
   world.add_resource(MousePosition::default());
+  world.add_resource(Keys::default());
+  world.add_resource(MouseButtons::default());
 }
