@@ -7,7 +7,7 @@ mod renderers;
 
 use crate::{
     graphics::{rendering::RenderingSystem, ScreenSize},
-    input::{InputState, Keys, MouseButtons, MouseMotion, MousePosition},
+    input::{InputState, Keys, MouseButtons, MouseMotion, MousePosition, MouseWheel},
 };
 use ggez::{
     conf::WindowMode,
@@ -90,6 +90,11 @@ impl<'a, 'b> MainState<'a, 'b> {
         mouse_motion_res.0 = mouse_motion;
     }
 
+    fn update_mouse_wheel(&mut self, mouse_wheel: Option<(Vector2<f32>)>) {
+        let mut mouse_motion_res = self.world.write_resource::<MouseWheel>();
+        mouse_motion_res.0 = mouse_wheel;
+    }
+
     fn render(&mut self, ctx: &mut Context) {
         let mut rendering_system = RenderingSystem::new(ctx);
         rendering_system.run_now(&self.world.res);
@@ -106,6 +111,7 @@ impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
         self.update_keys();
         self.update_mouse_buttons();
         self.update_mouse_motion(None);
+        self.update_mouse_wheel(None);
 
         self.last_frame = Instant::now();
 
@@ -161,6 +167,10 @@ impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
 
     fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32, dx: f32, dy: f32) {
         self.update_mouse_motion(Some(Vector2::new(dx, dy)));
+    }
+
+    fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: f32, y: f32) {
+        self.update_mouse_wheel(Some(Vector2::new(x, y)));
     }
 }
 
