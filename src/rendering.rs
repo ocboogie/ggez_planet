@@ -1,9 +1,12 @@
 use crate::camera::{world_to_screen, Camera};
-use crate::resources::ScreenSize;
-use ggez::graphics::{self, spritebatch, Color, DrawParam, Drawable, Image, MeshBuilder, Rect};
+use crate::resources::{Fonts, ScreenSize};
+use ggez::graphics::{
+  self, spritebatch, Color, DrawParam, Drawable, Font, Image, MeshBuilder, Rect, Scale,
+};
 use ggez::nalgebra::{Point2, Vector2};
 use ggez::{Context, GameResult};
 use specs::prelude::*;
+use std::collections::HashMap;
 
 #[derive(Clone)]
 pub enum ImageBuilder {
@@ -31,10 +34,19 @@ pub enum RenderInstruction {
   },
   #[allow(dead_code)]
   Mesh(MeshBuilder),
+  Text {
+    text: String,
+    font: &'static str,
+    scale: Scale,
+  },
 }
 
 impl RenderInstruction {
-  pub fn construct(self, ctx: &mut Context) -> GameResult<Box<Drawable>> {
+  pub fn construct(
+    self,
+    ctx: &mut Context,
+    fonts: &HashMap<&'static str, Font>,
+  ) -> GameResult<Box<Drawable>> {
     use RenderInstruction::*;
 
     Ok(match self {
@@ -52,6 +64,13 @@ impl RenderInstruction {
         Box::new(spritebatch)
       }
       Mesh(mesh_builder) => Box::new(mesh_builder.build(ctx)?),
+      Text { text, font, scale } => {
+        let mut drawable_text = graphics::Text::new(text);
+
+        drawable_text.set_font(fonts.get(font).cloned().unwrap_or_default(), scale);
+
+        Box::new(drawable_text)
+      }
     })
   }
 }
@@ -138,6 +157,7 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
   type SystemData = (
     Entities<'a>,
     Read<'a, ScreenSize>,
+    Read<'a, Fonts>,
     WriteStorage<'a, Renderable>,
     ReadStorage<'a, UiElement>,
     ReadStorage<'a, Position>,
@@ -145,7 +165,7 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
   );
 
   fn run(&mut self, data: Self::SystemData) {
-    let (entities, screen_size, mut renderables, ui_elements, positions, cameras) = data;
+    let (entities, screen_size, fonts, mut renderables, ui_elements, positions, cameras) = data;
 
     let screen_size = screen_size.0;
 
@@ -160,7 +180,10 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
       for (entity, renderable) in renderable_entities {
         let mut draw_param = renderable.draw_param.unwrap_or_else(DrawParam::default);
 
-        let drawable = renderable.instruction.construct(self.ctx).unwrap();
+        let drawable = renderable
+          .instruction
+          .construct(self.ctx, &fonts.0)
+          .unwrap();
 
         if let Some(ui_element) = &ui_elements.get(entity) {
           draw_param.dest = ui_element.anchor.unwrap_or_default().get_postion(Rect::new(

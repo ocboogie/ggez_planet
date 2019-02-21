@@ -1,5 +1,6 @@
 use crate::SCREEN_HEIGHT;
 use crate::SCREEN_WIDTH;
+use ggez::graphics::Font;
 use ggez::input::keyboard::KeyCode;
 use ggez::input::mouse::MouseButton;
 use ggez::nalgebra::{Point2, Vector2};
@@ -98,8 +99,11 @@ pub type MouseButtons = InputResource<MouseButton>;
 #[derive(Default)]
 pub struct MouseMotion(pub Option<(Vector2<f32>)>);
 
+#[derive(Default)]
+pub struct Fonts(pub HashMap<&'static str, Font>);
+
 pub fn setup<'a, 'b>(
-  _ctx: &mut Context,
+  ctx: &mut Context,
   world: &mut World,
   _dispatcher_builder: &mut DispatcherBuilder<'a, 'b>,
 ) {
@@ -109,4 +113,16 @@ pub fn setup<'a, 'b>(
   world.add_resource(Keys::default());
   world.add_resource(MouseButtons::default());
   world.add_resource(MouseMotion::default());
+
+  // TODO: Add a more elegant way to add fonts
+  world.add_resource(Fonts({
+    let mut fonts = HashMap::new();
+
+    fonts.insert(
+      "roboto",
+      Font::new_glyph_font_bytes(ctx, include_bytes!("../resources/Roboto.ttf")).unwrap(),
+    );
+
+    fonts
+  }))
 }
