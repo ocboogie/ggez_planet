@@ -1,7 +1,7 @@
 use crate::camera::{world_to_screen, Camera};
 use crate::resources::ScreenSize;
-use cgmath::Point2;
 use ggez::graphics::{self, spritebatch, Color, DrawParam, Image, MeshBuilder};
+use ggez::nalgebra::{Point2, Vector2};
 use ggez::{Context, GameResult};
 use specs::prelude::*;
 
@@ -159,9 +159,7 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
         let mut draw_param = renderable.draw_param.unwrap_or_else(DrawParam::default);
 
         if let Some(position) = positions.get(entity) {
-          // Reassigning "draw_param" because the dest property is using
-          // nalgebra so we can't change it directly
-          draw_param = draw_param.dest(position.0);
+          draw_param.dest = position.0;
         }
 
         if let Some(ui_element) = &ui_elements.get(entity) {
@@ -183,13 +181,12 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
         } else {
           draw_param = draw_param
             .dest(world_to_screen(
-              // TODO: convert from nalgebra to cgmath more efficiently
-              Point2::new(draw_param.dest.coords.x, draw_param.dest.coords.x),
+              draw_param.dest,
               camera_position,
               camera.zoom,
               screen_size,
             ))
-            .scale([camera.zoom, camera.zoom]);
+            .scale(Vector2::repeat(camera.zoom));
         }
 
         renderable.draw_param = Some(draw_param);

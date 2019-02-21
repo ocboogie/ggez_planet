@@ -218,7 +218,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "cellular_automaton_spec"
 version = "0.1.0"
 dependencies = [
- "cgmath 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "ggez 0.5.0-rc.0 (git+https://github.com/ggez/ggez.git)",
  "specs 0.14.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
@@ -253,17 +252,6 @@ dependencies = [
  "approx 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.1.43 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.3.23 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "cgmath"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "approx 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "mint 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
- "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -2244,7 +2232,6 @@ dependencies = [
 "checksum cfg-if 0.1.6 (registry+https://github.com/rust-lang/crates.io-index)" = "082bb9b28e00d3c9d39cc03e64ce4cea0f1bb9b3fde493f0cbc008472d22bdf4"
 "checksum cgl 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "55e7ec0b74fe5897894cbc207092c577e87c52f8a59e8ca8d97ef37551f60a49"
 "checksum cgmath 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)" = "87f025a17ad3f30d49015c787903976d5f9cd6115ece1eb7f4d6ffe06b8c4080"
-"checksum cgmath 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)" = "283944cdecc44bf0b8dd010ec9af888d3b4f142844fdbe026c20ef68148d6fe7"
 "checksum clang-sys 0.21.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e414af9726e1d11660801e73ccc7fb81803fb5f49e5903a25b348b2b3b480d2e"
 "checksum clap 2.32.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b957d88f4b6a63b9d70d5f454ac8011819c6efa7727858f458ab71c756ce2d3e"
 "checksum claxon 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "edfb6f5cce958c2741cae6774c8eb671c9caa8d079b6b7ab94d9fff895f6a3ac"

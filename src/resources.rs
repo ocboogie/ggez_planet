@@ -1,8 +1,8 @@
 use crate::SCREEN_HEIGHT;
 use crate::SCREEN_WIDTH;
-use cgmath::{Point2, Vector2};
 use ggez::input::keyboard::KeyCode;
 use ggez::input::mouse::MouseButton;
+use ggez::nalgebra::{Point2, Vector2};
 use ggez::Context;
 use specs::prelude::*;
 use std::collections::HashMap;

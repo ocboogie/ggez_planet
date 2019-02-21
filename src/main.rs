@@ -9,11 +9,11 @@ mod resources;
 use crate::resources::{
     DeltaTime, InputState, Keys, MouseButtons, MouseMotion, MousePosition, ScreenSize,
 };
-use cgmath::Vector2;
 use ggez::conf::WindowMode;
 use ggez::graphics;
 use ggez::input::keyboard::{KeyCode, KeyMods};
 use ggez::input::mouse::{self, MouseButton};
+use ggez::nalgebra::Vector2;
 use ggez::{event, Context, GameResult};
 use rendering::RenderingSystem;
 use specs::prelude::*;

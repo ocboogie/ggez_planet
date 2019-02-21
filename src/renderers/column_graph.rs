@@ -1,5 +1,5 @@
 use crate::rendering::{ImageBuilder, RenderInstruction, Renderable};
-use cgmath::{Point2, Vector2};
+use ggez::nalgebra::{Point2, Vector2};
 use ggez::{
   graphics::{DrawParam, BLACK},
   Context,
