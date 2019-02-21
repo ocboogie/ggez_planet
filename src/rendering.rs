@@ -78,7 +78,6 @@ impl RenderInstruction {
 pub struct Renderable {
   pub instruction: RenderInstruction,
   pub draw_param: Option<DrawParam>,
-  pub layer: Option<i32>,
 }
 
 impl Component for Renderable {
@@ -88,6 +87,12 @@ impl Component for Renderable {
 pub struct Position(pub Point2<f32>);
 
 impl Component for Position {
+  type Storage = VecStorage<Self>;
+}
+
+pub struct Layer(pub i32);
+
+impl Component for Layer {
   type Storage = VecStorage<Self>;
 }
 
@@ -160,12 +165,14 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
     Read<'a, Fonts>,
     WriteStorage<'a, Renderable>,
     ReadStorage<'a, UiElement>,
+    ReadStorage<'a, Layer>,
     ReadStorage<'a, Position>,
     ReadStorage<'a, Camera>,
   );
 
   fn run(&mut self, data: Self::SystemData) {
-    let (entities, screen_size, fonts, mut renderables, ui_elements, positions, cameras) = data;
+    let (entities, screen_size, fonts, mut renderables, ui_elements, layers, positions, cameras) =
+      data;
 
     let screen_size = screen_size.0;
 
@@ -175,7 +182,8 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
       let mut renderable_entities: Vec<(Entity, Renderable)> =
         (&*entities, renderables.drain()).join().collect();
 
-      renderable_entities.sort_by_key(|(_, renderable)| renderable.layer);
+      renderable_entities
+        .sort_by_key(|(entity, _)| layers.get(*entity).map(|layer| layer.0).unwrap_or_default());
 
       for (entity, renderable) in renderable_entities {
         let mut draw_param = renderable.draw_param.unwrap_or_else(DrawParam::default);
@@ -223,6 +231,7 @@ pub fn setup<'a, 'b>(
   _dispatcher_builder: &mut DispatcherBuilder<'a, 'b>,
 ) {
   world.register::<Position>();
+  world.register::<Layer>();
   world.register::<Renderable>();
   world.register::<UiElement>();
 }

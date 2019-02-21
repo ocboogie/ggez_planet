@@ -53,7 +53,6 @@ impl<'a> System<'a> for ColumnGraphRenderer {
             sprites,
           },
           draw_param: None,
-          layer: None,
         },
       );
     }

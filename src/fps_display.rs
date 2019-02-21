@@ -1,5 +1,5 @@
 use crate::renderers::text::Text;
-use crate::rendering::{Anchor, UiElement};
+use crate::rendering::{Anchor, Layer, UiElement};
 use ggez::graphics::Scale;
 use ggez::Context;
 use specs::prelude::*;

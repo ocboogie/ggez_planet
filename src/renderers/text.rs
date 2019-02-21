@@ -36,7 +36,6 @@ impl<'a> System<'a> for TextRenderer {
             scale: text.scale,
           },
           draw_param: None,
-          layer: None,
         },
       );
     }
