@@ -6,11 +6,11 @@ mod renderers;
 mod rendering;
 mod resources;
 
-use crate::resources::DeltaTime;
-use crate::resources::ScreenSize;
+use crate::resources::{DeltaTime, MousePosition, ScreenSize};
 use cgmath::Vector2;
 use ggez::conf::WindowMode;
 use ggez::graphics;
+use ggez::input::mouse;
 use ggez::{event, Context, GameResult};
 use rendering::RenderingSystem;
 use specs::prelude::*;
@@ -49,10 +49,15 @@ impl<'a, 'b> MainState<'a, 'b> {
 }
 
 impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
-    fn update(&mut self, _ctx: &mut Context) -> GameResult {
+    fn update(&mut self, ctx: &mut Context) -> GameResult {
         {
             let mut delta = self.world.write_resource::<DeltaTime>();
             delta.0 = self.last_frame.elapsed().as_float_secs() as f32;
+        }
+
+        {
+            let mut mouse_position = self.world.write_resource::<MousePosition>();
+            mouse_position.0 = mouse::position(ctx).into();
         }
 
         self.dispatcher.dispatch(&self.world.res);

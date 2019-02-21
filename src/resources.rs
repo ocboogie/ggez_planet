@@ -1,6 +1,6 @@
 use crate::SCREEN_HEIGHT;
 use crate::SCREEN_WIDTH;
-use cgmath::Vector2;
+use cgmath::{Point2, Vector2};
 use ggez::Context;
 use specs::prelude::*;
 
@@ -15,6 +15,14 @@ impl Default for ScreenSize {
   }
 }
 
+pub struct MousePosition(pub Point2<f32>);
+
+impl Default for MousePosition {
+  fn default() -> Self {
+    Self(Point2::new(0.0, 0.0))
+  }
+}
+
 pub fn setup<'a, 'b>(
   _ctx: &mut Context,
   world: &mut World,
@@ -22,4 +30,5 @@ pub fn setup<'a, 'b>(
 ) {
   world.add_resource(DeltaTime::default());
   world.add_resource(ScreenSize::default());
+  world.add_resource(MousePosition::default());
 }
