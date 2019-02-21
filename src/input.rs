@@ -1,24 +1,10 @@
-use crate::SCREEN_HEIGHT;
-use crate::SCREEN_WIDTH;
-use ggez::graphics::Font;
-use ggez::input::keyboard::KeyCode;
-use ggez::input::mouse::MouseButton;
-use ggez::nalgebra::{Point2, Vector2};
-use ggez::Context;
+use ggez::{
+  input::{keyboard::KeyCode, mouse::MouseButton},
+  nalgebra::{Point2, Vector2},
+  Context,
+};
 use specs::prelude::*;
-use std::collections::HashMap;
-use std::hash::Hash;
-
-#[derive(Default)]
-pub struct DeltaTime(pub f32);
-
-pub struct ScreenSize(pub Vector2<f32>);
-
-impl Default for ScreenSize {
-  fn default() -> Self {
-    Self(Vector2::new(SCREEN_WIDTH, SCREEN_HEIGHT))
-  }
-}
+use std::{collections::HashMap, hash::Hash};
 
 pub struct MousePosition(pub Point2<f32>);
 
@@ -56,6 +42,7 @@ impl<K: Hash + Eq + Copy> InputResource<K> {
   }
 
   /// Returns true if the key specified was pressed down this frame or is being held
+  #[allow(dead_code)]
   pub fn is_down(&self, input: &K) -> bool {
     self
       .0
@@ -65,6 +52,7 @@ impl<K: Hash + Eq + Copy> InputResource<K> {
   }
 
   /// Returns true if the key specified was just pressed down this frame
+  #[allow(dead_code)]
   pub fn is_pressed(&self, input: &K) -> bool {
     self
       .0
@@ -74,6 +62,7 @@ impl<K: Hash + Eq + Copy> InputResource<K> {
   }
 
   /// Returns true if the key specified is held this frame
+  #[allow(dead_code)]
   pub fn is_held(&self, input: &K) -> bool {
     self
       .0
@@ -83,6 +72,7 @@ impl<K: Hash + Eq + Copy> InputResource<K> {
   }
 
   /// Returns true if the key specified was released this frame
+  #[allow(dead_code)]
   pub fn is_released(&self, input: &K) -> bool {
     self
       .0
@@ -99,30 +89,13 @@ pub type MouseButtons = InputResource<MouseButton>;
 #[derive(Default)]
 pub struct MouseMotion(pub Option<(Vector2<f32>)>);
 
-#[derive(Default)]
-pub struct Fonts(pub HashMap<&'static str, Font>);
-
 pub fn setup<'a, 'b>(
-  ctx: &mut Context,
+  _ctx: &mut Context,
   world: &mut World,
   _dispatcher_builder: &mut DispatcherBuilder<'a, 'b>,
 ) {
-  world.add_resource(DeltaTime::default());
-  world.add_resource(ScreenSize::default());
   world.add_resource(MousePosition::default());
   world.add_resource(Keys::default());
   world.add_resource(MouseButtons::default());
   world.add_resource(MouseMotion::default());
-
-  // TODO: Add a more elegant way to add fonts
-  world.add_resource(Fonts({
-    let mut fonts = HashMap::new();
-
-    fonts.insert(
-      "roboto",
-      Font::new_glyph_font_bytes(ctx, include_bytes!("../resources/Roboto.ttf")).unwrap(),
-    );
-
-    fonts
-  }))
 }

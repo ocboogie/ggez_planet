@@ -1,10 +1,15 @@
-use crate::camera::{world_to_screen, Camera};
-use crate::resources::{Fonts, ScreenSize};
-use ggez::graphics::{
-  self, spritebatch, Color, DrawParam, Drawable, Font, Image, MeshBuilder, Rect, Scale,
+use super::{
+  camera::{world_to_screen, Camera},
+  ui::UiElement,
+  Fonts, Layer, Position, ScreenSize,
 };
-use ggez::nalgebra::{Point2, Vector2};
-use ggez::{Context, GameResult};
+use ggez::{
+  graphics::{
+    self, spritebatch, Color, DrawParam, Drawable, Font, Image, MeshBuilder, Rect, Scale,
+  },
+  nalgebra::Vector2,
+  Context, GameResult,
+};
 use specs::prelude::*;
 use std::collections::HashMap;
 
@@ -82,69 +87,6 @@ pub struct Renderable {
 
 impl Component for Renderable {
   type Storage = VecStorage<Self>;
-}
-
-pub struct Position(pub Point2<f32>);
-
-impl Component for Position {
-  type Storage = VecStorage<Self>;
-}
-
-pub struct Layer(pub i32);
-
-impl Component for Layer {
-  type Storage = VecStorage<Self>;
-}
-
-#[derive(Copy, Clone)]
-pub enum Anchor {
-  TopLeft,
-  TopCenter,
-  TopRight,
-
-  CenterLeft,
-  Center,
-  CenterRight,
-
-  BottomLeft,
-  BottomCenter,
-  BottomRight,
-}
-
-impl Anchor {
-  pub fn get_postion(self, bounds: Rect) -> Point2<f32> {
-    use Anchor::*;
-
-    match self {
-      TopLeft => Point2::new(bounds.x, bounds.y),
-      TopCenter => Point2::new(bounds.x + bounds.w / 2.0, bounds.y),
-      TopRight => Point2::new(bounds.x + bounds.w, bounds.y),
-
-      CenterLeft => Point2::new(bounds.x, bounds.y + bounds.h / 2.0),
-      Center => Point2::new(bounds.x + bounds.w / 2.0, bounds.y + bounds.h / 2.0),
-      CenterRight => Point2::new(bounds.x + bounds.w, bounds.y + bounds.h / 2.0),
-
-      BottomLeft => Point2::new(bounds.x, bounds.y + bounds.h),
-      BottomCenter => Point2::new(bounds.x + bounds.w / 2.0, bounds.y + bounds.h),
-      BottomRight => Point2::new(bounds.x + bounds.w, bounds.y + bounds.h),
-    }
-  }
-}
-
-impl Default for Anchor {
-  fn default() -> Self {
-    Anchor::Center
-  }
-}
-
-#[derive(Default)]
-pub struct UiElement {
-  pub anchor: Option<Anchor>,
-  pub origin: Option<Anchor>,
-}
-
-impl Component for UiElement {
-  type Storage = DenseVecStorage<Self>;
 }
 
 pub struct RenderingSystem<'c> {
@@ -230,8 +172,5 @@ pub fn setup<'a, 'b>(
   world: &mut World,
   _dispatcher_builder: &mut DispatcherBuilder<'a, 'b>,
 ) {
-  world.register::<Position>();
-  world.register::<Layer>();
   world.register::<Renderable>();
-  world.register::<UiElement>();
 }

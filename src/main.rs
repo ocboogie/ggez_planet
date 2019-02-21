@@ -1,27 +1,33 @@
 #![feature(duration_float)]
 
-mod camera;
-mod fps_display;
-mod performance_graph;
+mod debug;
+mod graphics;
+mod input;
 mod renderers;
-mod rendering;
-mod resources;
 
-use crate::resources::{
-    DeltaTime, InputState, Keys, MouseButtons, MouseMotion, MousePosition, ScreenSize,
+use crate::{
+    graphics::{rendering::RenderingSystem, ScreenSize},
+    input::{InputState, Keys, MouseButtons, MouseMotion, MousePosition},
 };
-use ggez::conf::WindowMode;
-use ggez::graphics;
-use ggez::input::keyboard::{KeyCode, KeyMods};
-use ggez::input::mouse::{self, MouseButton};
-use ggez::nalgebra::Vector2;
-use ggez::{event, Context, GameResult};
-use rendering::RenderingSystem;
+use ggez::{
+    conf::WindowMode,
+    event,
+    graphics::{self as ggez_graphics, Rect},
+    input::{
+        keyboard::{KeyCode, KeyMods},
+        mouse::{self, MouseButton},
+    },
+    nalgebra::Vector2,
+    Context, GameResult,
+};
 use specs::prelude::*;
 use std::time::Instant;
 
 pub static SCREEN_WIDTH: f32 = 800.0;
 pub static SCREEN_HEIGHT: f32 = 600.0;
+
+#[derive(Default)]
+pub struct DeltaTime(pub f32);
 
 struct MainState<'a, 'b> {
     world: World,
@@ -34,14 +40,14 @@ impl<'a, 'b> MainState<'a, 'b> {
         let mut world = specs::World::new();
         let mut dispatcher_builder = DispatcherBuilder::new();
 
-        resources::setup(ctx, &mut world, &mut dispatcher_builder);
-        rendering::setup(ctx, &mut world, &mut dispatcher_builder);
-        camera::setup(ctx, &mut world, &mut dispatcher_builder);
+        world.add_resource(DeltaTime::default());
+
+        graphics::setup(ctx, &mut world, &mut dispatcher_builder);
+        input::setup(ctx, &mut world, &mut dispatcher_builder);
 
         renderers::setup(ctx, &mut world, &mut dispatcher_builder);
 
-        fps_display::setup(ctx, &mut world, &mut dispatcher_builder);
-        performance_graph::setup(ctx, &mut world, &mut dispatcher_builder);
+        debug::setup(ctx, &mut world, &mut dispatcher_builder);
 
         let dispatcher = dispatcher_builder.build();
 
@@ -107,16 +113,16 @@ impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
+        ggez_graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
         self.render(ctx);
 
-        graphics::present(ctx)?;
+        ggez_graphics::present(ctx)?;
         Ok(())
     }
 
     fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
-        let _ = graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height));
+        let _ = ggez_graphics::set_screen_coordinates(ctx, Rect::new(0.0, 0.0, width, height));
 
         self.update_screen_size(width, height);
     }

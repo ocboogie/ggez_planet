@@ -1,5 +1,5 @@
-pub mod column_graph;
-pub mod text;
+pub mod fps_display;
+pub mod performance_graph;
 
 use ggez::Context;
 use specs::prelude::*;
@@ -9,6 +9,6 @@ pub fn setup<'a, 'b>(
     world: &mut World,
     dispatcher_builder: &mut DispatcherBuilder<'a, 'b>,
 ) {
-    column_graph::setup(ctx, world, dispatcher_builder);
-    text::setup(ctx, world, dispatcher_builder);
+    fps_display::setup(ctx, world, dispatcher_builder);
+    performance_graph::setup(ctx, world, dispatcher_builder);
 }
