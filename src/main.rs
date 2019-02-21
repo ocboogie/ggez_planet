@@ -48,17 +48,32 @@ impl<'a, 'b> MainState<'a, 'b> {
     }
 }
 
+impl<'a, 'b> MainState<'a, 'b> {
+    fn update_delta_time(&mut self) {
+        let mut delta = self.world.write_resource::<DeltaTime>();
+        delta.0 = self.last_frame.elapsed().as_float_secs() as f32;
+    }
+
+    fn update_mouse_position(&mut self, ctx: &mut Context) {
+        let mut mouse_position = self.world.write_resource::<MousePosition>();
+        mouse_position.0 = mouse::position(ctx).into();
+    }
+
+    fn update_screen_size(&mut self, width: f32, height: f32) {
+        let mut screen_size = self.world.write_resource::<ScreenSize>();
+        screen_size.0 = Vector2::new(width, height);
+    }
+
+    fn render(&mut self, ctx: &mut Context) {
+        let mut rendering_system = RenderingSystem::new(ctx);
+        rendering_system.run_now(&self.world.res);
+    }
+}
+
 impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        {
-            let mut delta = self.world.write_resource::<DeltaTime>();
-            delta.0 = self.last_frame.elapsed().as_float_secs() as f32;
-        }
-
-        {
-            let mut mouse_position = self.world.write_resource::<MousePosition>();
-            mouse_position.0 = mouse::position(ctx).into();
-        }
+        self.update_delta_time();
+        self.update_mouse_position(ctx);
 
         self.dispatcher.dispatch(&self.world.res);
 
@@ -70,20 +85,16 @@ impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         graphics::clear(ctx, [0.1, 0.2, 0.3, 1.0].into());
 
-        {
-            let mut rendering_system = RenderingSystem::new(ctx);
-            rendering_system.run_now(&self.world.res);
-        }
+        self.render(ctx);
 
         graphics::present(ctx)?;
         Ok(())
     }
 
     fn resize_event(&mut self, ctx: &mut Context, width: f32, height: f32) {
-        let mut screen_size = self.world.write_resource::<ScreenSize>();
-        screen_size.0 = Vector2::new(width, height);
-
         let _ = graphics::set_screen_coordinates(ctx, graphics::Rect::new(0.0, 0.0, width, height));
+
+        self.update_screen_size(width, height);
     }
 }
 
