@@ -1,21 +1,68 @@
 use crate::camera::{world_to_screen, Camera};
 use crate::resources::ScreenSize;
-use cgmath::{Point2, Vector2};
-use ggez::graphics::{self, spritebatch::SpriteBatch, DrawParam, Image, Mesh, BLACK};
-use ggez::Context;
+use cgmath::Point2;
+use ggez::graphics::{self, spritebatch, Color, DrawParam, Image, MeshBuilder};
+use ggez::{Context, GameResult};
 use specs::prelude::*;
 
-pub enum RenderType {
+#[derive(Clone)]
+pub enum ImageBuilder {
+  Solid { size: u16, color: Color },
+}
+
+impl ImageBuilder {
+  pub fn build(self, ctx: &mut Context) -> GameResult<Image> {
+    use ImageBuilder::*;
+
+    match self {
+      Solid { size, color } => Image::solid(ctx, size, color),
+    }
+  }
+}
+
+// TODO: Add text and canvas variants
+#[derive(Clone)]
+pub enum RenderInstruction {
   #[allow(dead_code)]
-  Image(Image),
+  Image(ImageBuilder),
   #[allow(dead_code)]
-  SpriteBatch(SpriteBatch),
-  #[allow(dead_code)]
-  Mesh(Mesh),
-  ColumnGraph {
-    columns: Vec<usize>,
-    size: f32,
+  SpriteBatch {
+    image_builder: ImageBuilder,
+    sprites: Vec<DrawParam>,
   },
+  #[allow(dead_code)]
+  Mesh(MeshBuilder),
+}
+
+impl RenderInstruction {
+  pub fn render(self, ctx: &mut Context, draw_param: DrawParam) -> GameResult {
+    use RenderInstruction::*;
+
+    match self {
+      Image(image_builder) => {
+        let image = &image_builder.build(ctx)?;
+        graphics::draw(ctx, image, draw_param)?;
+      }
+      SpriteBatch {
+        image_builder,
+        sprites,
+      } => {
+        let mut spritebatch = spritebatch::SpriteBatch::new(image_builder.build(ctx)?);
+
+        for sprite in sprites {
+          spritebatch.add(sprite);
+        }
+
+        graphics::draw(ctx, &spritebatch, draw_param)?;
+      }
+      Mesh(mesh_builder) => {
+        let mesh = mesh_builder.build(ctx)?;
+        graphics::draw(ctx, &mesh, draw_param)?;
+      }
+    };
+
+    Ok(())
+  }
 }
 
 pub enum HorizontalDirection {
@@ -35,8 +82,17 @@ pub enum VerticalDirection {
 }
 
 pub struct Renderable {
-  pub render_type: RenderType,
+  pub instruction: RenderInstruction,
   pub draw_param: Option<DrawParam>,
+  pub layer: Option<i32>,
+}
+
+impl Renderable {
+  pub fn render(self, ctx: &mut Context) -> GameResult {
+    self
+      .instruction
+      .render(ctx, self.draw_param.unwrap_or_default())
+  }
 }
 
 impl Component for Renderable {
@@ -74,21 +130,26 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
   type SystemData = (
     Entities<'a>,
     Read<'a, ScreenSize>,
-    ReadStorage<'a, Renderable>,
+    WriteStorage<'a, Renderable>,
     ReadStorage<'a, UiElement>,
     ReadStorage<'a, Position>,
     ReadStorage<'a, Camera>,
   );
 
   fn run(&mut self, data: Self::SystemData) {
-    let (entities, screen_size, renderables, ui_elements, positions, cameras) = data;
+    let (entities, screen_size, mut renderables, ui_elements, positions, cameras) = data;
 
     let screen_size = screen_size.0;
 
     for (camera, camera_position) in (&cameras, &positions).join() {
       let camera_position = camera_position.0;
 
-      for (entity, renderable) in (&*entities, &renderables).join() {
+      let mut renderable_entities: Vec<(Entity, Renderable)> =
+        (&*entities, renderables.drain()).join().collect();
+
+      renderable_entities.sort_by_key(|(_, renderable)| renderable.layer);
+
+      for (entity, mut renderable) in renderable_entities {
         let mut draw_param = renderable.draw_param.unwrap_or_else(DrawParam::default);
 
         if let Some(position) = positions.get(entity) {
@@ -125,26 +186,9 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
             .scale([camera.zoom, camera.zoom]);
         }
 
-        match &renderable.render_type {
-          RenderType::Image(image) => graphics::draw(self.ctx, image, draw_param).unwrap(),
-          RenderType::SpriteBatch(sprite_batch) => {
-            graphics::draw(self.ctx, sprite_batch, draw_param).unwrap()
-          }
-          RenderType::Mesh(mesh) => graphics::draw(self.ctx, mesh, draw_param).unwrap(),
-          RenderType::ColumnGraph { columns, size } => {
-            let mut spritebatch = SpriteBatch::new(Image::solid(self.ctx, 1, BLACK).unwrap());
+        renderable.draw_param = Some(draw_param);
 
-            for (index, column) in columns.iter().enumerate() {
-              spritebatch.add(
-                draw_param
-                  .dest(Point2::new(index as f32 * *size, 0.0))
-                  .scale(Vector2::new(*size, -(*column as f32))),
-              );
-            }
-
-            graphics::draw(self.ctx, &spritebatch, draw_param).unwrap();
-          }
-        };
+        renderable.render(self.ctx).unwrap();
       }
     }
   }

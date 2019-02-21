@@ -1,6 +1,7 @@
-use crate::rendering::{HorizontalDirection, RenderType, Renderable, UiElement, VerticalDirection};
+use crate::renderers::column_graph::ColumnGraph;
+use crate::rendering::{HorizontalDirection, UiElement, VerticalDirection};
 use crate::resources::DeltaTime;
-use ggez::{graphics::DrawParam, Context};
+use ggez::Context;
 use specs::prelude::*;
 
 static COLUMNS: usize = 50;
@@ -19,25 +20,21 @@ pub struct UpdateFps;
 impl<'a> System<'a> for UpdateFps {
   type SystemData = (
     Read<'a, DeltaTime>,
-    WriteStorage<'a, Renderable>,
+    WriteStorage<'a, ColumnGraph>,
     ReadStorage<'a, FpsCounter>,
   );
 
   fn run(&mut self, data: Self::SystemData) {
-    use specs::Join;
-
-    let (delta_time, mut renderable, fps_counter) = data;
+    let (delta_time, mut column_graphs, fps_counter) = data;
 
     let delta_time = delta_time.0;
 
-    for (renderable, _) in (&mut renderable, &fps_counter).join() {
-      if let RenderType::ColumnGraph { columns, .. } = &mut renderable.render_type {
-        if columns.len() > COLUMNS {
-          columns.remove(0);
-        }
-
-        columns.push((delta_time * 1000.0) as usize);
+    for (column_graph, _) in (&mut column_graphs, &fps_counter).join() {
+      if column_graph.columns.len() >= COLUMNS {
+        column_graph.columns.remove(0);
       }
+
+      column_graph.columns.push((delta_time * 1000.0) as usize);
     }
   }
 }
@@ -54,12 +51,9 @@ pub fn setup<'a, 'b>(
   world
     .create_entity()
     .with(FpsCounter::default())
-    .with(Renderable {
-      draw_param: Some(DrawParam::default()),
-      render_type: RenderType::ColumnGraph {
-        columns: Vec::with_capacity(COLUMNS),
-        size: COLUMN_WIDTH,
-      },
+    .with(ColumnGraph {
+      columns: Vec::with_capacity(COLUMNS),
+      size: COLUMN_WIDTH,
     })
     .with(UiElement {
       stick_horizontal: Some(HorizontalDirection::Left),
