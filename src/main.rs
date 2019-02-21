@@ -6,7 +6,9 @@ mod renderers;
 mod rendering;
 mod resources;
 
-use crate::resources::{DeltaTime, InputState, Keys, MouseButtons, MousePosition, ScreenSize};
+use crate::resources::{
+    DeltaTime, InputState, Keys, MouseButtons, MouseMotion, MousePosition, ScreenSize,
+};
 use cgmath::Vector2;
 use ggez::conf::WindowMode;
 use ggez::graphics;
@@ -75,6 +77,11 @@ impl<'a, 'b> MainState<'a, 'b> {
         mouse_buttons.update();
     }
 
+    fn update_mouse_motion(&mut self, mouse_motion: Option<(Vector2<f32>)>) {
+        let mut mouse_motion_res = self.world.write_resource::<MouseMotion>();
+        mouse_motion_res.0 = mouse_motion;
+    }
+
     fn render(&mut self, ctx: &mut Context) {
         let mut rendering_system = RenderingSystem::new(ctx);
         rendering_system.run_now(&self.world.res);
@@ -90,6 +97,7 @@ impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
 
         self.update_keys();
         self.update_mouse_buttons();
+        self.update_mouse_motion(None);
 
         self.last_frame = Instant::now();
 
@@ -141,6 +149,10 @@ impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
     fn key_up_event(&mut self, _ctx: &mut Context, keycode: KeyCode, _keymods: KeyMods) {
         let mut keys = self.world.write_resource::<Keys>();
         keys.0.insert(keycode, InputState::Released);
+    }
+
+    fn mouse_motion_event(&mut self, _ctx: &mut Context, _x: f32, _y: f32, dx: f32, dy: f32) {
+        self.update_mouse_motion(Some(Vector2::new(dx, dy)));
     }
 }
 

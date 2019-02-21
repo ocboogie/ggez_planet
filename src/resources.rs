@@ -95,6 +95,9 @@ pub type Keys = InputResource<KeyCode>;
 
 pub type MouseButtons = InputResource<MouseButton>;
 
+#[derive(Default)]
+pub struct MouseMotion(pub Option<(Vector2<f32>)>);
+
 pub fn setup<'a, 'b>(
   _ctx: &mut Context,
   world: &mut World,
@@ -105,4 +108,5 @@ pub fn setup<'a, 'b>(
   world.add_resource(MousePosition::default());
   world.add_resource(Keys::default());
   world.add_resource(MouseButtons::default());
+  world.add_resource(MouseMotion::default());
 }
