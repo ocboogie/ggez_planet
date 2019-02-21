@@ -1,5 +1,5 @@
 use crate::renderers::column_graph::ColumnGraph;
-use crate::rendering::{Anchor, UiElement};
+use crate::rendering::{Anchor, Layer, UiElement};
 use crate::resources::DeltaTime;
 use ggez::Context;
 use specs::prelude::*;
@@ -55,6 +55,7 @@ pub fn setup<'a, 'b>(
       columns: Vec::with_capacity(COLUMNS),
       size: COLUMN_WIDTH,
     })
+    .with(Layer(9))
     .with(UiElement {
       anchor: Some(Anchor::BottomLeft),
       origin: Some(Anchor::BottomLeft),

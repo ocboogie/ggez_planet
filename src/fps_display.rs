@@ -67,6 +67,7 @@ pub fn setup<'a, 'b>(
       scale: Scale::uniform(FONT_SIZE),
     })
     .with(FpsDisplay::default())
+    .with(Layer(10))
     .with(UiElement {
       anchor: Some(Anchor::TopLeft),
       origin: Some(Anchor::TopLeft),
