@@ -1,6 +1,6 @@
 use crate::camera::{world_to_screen, Camera};
 use crate::resources::ScreenSize;
-use ggez::graphics::{self, spritebatch, Color, DrawParam, Image, MeshBuilder};
+use ggez::graphics::{self, spritebatch, Color, DrawParam, Drawable, Image, MeshBuilder};
 use ggez::nalgebra::{Point2, Vector2};
 use ggez::{Context, GameResult};
 use specs::prelude::*;
@@ -31,19 +31,14 @@ pub enum RenderInstruction {
   },
   #[allow(dead_code)]
   Mesh(MeshBuilder),
-  #[allow(dead_code)]
-  Multi(Vec<RenderInstruction>),
 }
 
 impl RenderInstruction {
-  pub fn render(self, ctx: &mut Context, draw_param: DrawParam) -> GameResult {
+  pub fn construct(self, ctx: &mut Context) -> GameResult<Box<Drawable>> {
     use RenderInstruction::*;
 
-    match self {
-      Image(image_builder) => {
-        let image = &image_builder.build(ctx)?;
-        graphics::draw(ctx, image, draw_param)?;
-      }
+    Ok(match self {
+      Image(image_builder) => Box::new(image_builder.build(ctx)?),
       SpriteBatch {
         image_builder,
         sprites,
@@ -54,20 +49,10 @@ impl RenderInstruction {
           spritebatch.add(sprite);
         }
 
-        graphics::draw(ctx, &spritebatch, draw_param)?;
+        Box::new(spritebatch)
       }
-      Mesh(mesh_builder) => {
-        let mesh = mesh_builder.build(ctx)?;
-        graphics::draw(ctx, &mesh, draw_param)?;
-      }
-      Multi(instructions) => {
-        for instruction in instructions {
-          instruction.render(ctx, draw_param)?;
-        }
-      }
-    };
-
-    Ok(())
+      Mesh(mesh_builder) => Box::new(mesh_builder.build(ctx)?),
+    })
   }
 }
 
@@ -75,14 +60,6 @@ pub struct Renderable {
   pub instruction: RenderInstruction,
   pub draw_param: Option<DrawParam>,
   pub layer: Option<i32>,
-}
-
-impl Renderable {
-  pub fn render(self, ctx: &mut Context) -> GameResult {
-    self
-      .instruction
-      .render(ctx, self.draw_param.unwrap_or_default())
-  }
 }
 
 impl Component for Renderable {
@@ -179,7 +156,7 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
 
       renderable_entities.sort_by_key(|(_, renderable)| renderable.layer);
 
-      for (entity, mut renderable) in renderable_entities {
+      for (entity, renderable) in renderable_entities {
         let mut draw_param = renderable.draw_param.unwrap_or_else(DrawParam::default);
 
         if let Some(ui_element) = &ui_elements.get(entity) {
@@ -198,9 +175,8 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
           draw_param.dest = position.0;
         }
 
-        renderable.draw_param = Some(draw_param);
-
-        renderable.render(self.ctx).unwrap();
+        let drawable = renderable.instruction.construct(self.ctx).unwrap();
+        drawable.draw(self.ctx, draw_param).unwrap();
       }
     }
   }
