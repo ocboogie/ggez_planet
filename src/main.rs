@@ -3,7 +3,6 @@
 mod debug;
 mod graphics;
 mod input;
-mod painter;
 mod renderers;
 
 use crate::{
