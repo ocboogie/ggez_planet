@@ -97,8 +97,13 @@ impl<'a, 'b> MainState<'a, 'b> {
     }
 
     fn update_mouse_wheel(&mut self, mouse_wheel: Option<(Vector2<f32>)>) {
-        let mut mouse_motion_res = self.world.write_resource::<MouseWheel>();
-        mouse_motion_res.0 = mouse_wheel;
+        let mut mouse_wheel_res = self.world.write_resource::<MouseWheel>();
+
+        mouse_wheel_res.0 = mouse_wheel.map(|mouse_wheel| {
+            mouse_wheel_res
+                .0
+                .map_or(mouse_wheel, |motion| motion + mouse_wheel)
+        });
     }
 
     fn render(&mut self, ctx: &mut Context) {
