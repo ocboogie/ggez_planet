@@ -44,6 +44,9 @@ impl Component for Camera {
     type Storage = VecStorage<Self>;
 }
 
+#[derive(Default)]
+pub struct ActiveCamera(pub Option<Entity>);
+
 pub fn setup<'a, 'b>(
     _ctx: &mut Context,
     world: &mut World,
@@ -51,9 +54,11 @@ pub fn setup<'a, 'b>(
 ) {
     world.register::<Camera>();
 
-    world
+    let camera_entity = world
         .create_entity()
         .with(Camera::default())
         .with(Position(Point2::origin()))
         .build();
+
+    world.add_resource(ActiveCamera(Some(camera_entity)));
 }

@@ -1,5 +1,5 @@
 use super::{
-  camera::{world_to_screen, Camera},
+  camera::{world_to_screen, ActiveCamera, Camera},
   ui::UiElement,
   Fonts, Layer, Position, ScreenSize,
 };
@@ -105,6 +105,7 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
     Entities<'a>,
     Read<'a, ScreenSize>,
     Read<'a, Fonts>,
+    Write<'a, ActiveCamera>,
     WriteStorage<'a, Renderable>,
     ReadStorage<'a, UiElement>,
     ReadStorage<'a, Layer>,
@@ -113,55 +114,69 @@ impl<'a, 'c> System<'a> for RenderingSystem<'c> {
   );
 
   fn run(&mut self, data: Self::SystemData) {
-    let (entities, screen_size, fonts, mut renderables, ui_elements, layers, positions, cameras) =
-      data;
+    let (
+      entities,
+      screen_size,
+      fonts,
+      active_camera,
+      mut renderables,
+      ui_elements,
+      layers,
+      positions,
+      cameras,
+    ) = data;
 
     let screen_size = screen_size.0;
 
-    for (camera, camera_position) in (&cameras, &positions).join() {
-      let camera_position = camera_position.0;
+    if let Some(active_camera) = active_camera.0 {
+      if let Some(camera) = cameras.get(active_camera) {
+        if let Some(camera_position) = positions.get(active_camera) {
+          let camera_position = camera_position.0;
 
-      let mut renderable_entities: Vec<(Entity, Renderable)> =
-        (&*entities, renderables.drain()).join().collect();
+          let mut renderable_entities: Vec<(Entity, Renderable)> =
+            (&*entities, renderables.drain()).join().collect();
 
-      renderable_entities
-        .sort_by_key(|(entity, _)| layers.get(*entity).map(|layer| layer.0).unwrap_or_default());
+          renderable_entities.sort_by_key(|(entity, _)| {
+            layers.get(*entity).map(|layer| layer.0).unwrap_or_default()
+          });
 
-      for (entity, renderable) in renderable_entities {
-        let mut draw_param = renderable.draw_param.unwrap_or_else(DrawParam::default);
+          for (entity, renderable) in renderable_entities {
+            let mut draw_param = renderable.draw_param.unwrap_or_else(DrawParam::default);
 
-        let drawable = renderable
-          .instruction
-          .construct(self.ctx, &fonts.0)
-          .unwrap();
+            let drawable = renderable
+              .instruction
+              .construct(self.ctx, &fonts.0)
+              .unwrap();
 
-        if let Some(ui_element) = &ui_elements.get(entity) {
-          draw_param.dest = ui_element.anchor.unwrap_or_default().get_postion(Rect::new(
-            0.0,
-            0.0,
-            screen_size.x,
-            screen_size.y,
-          ));
+            if let Some(ui_element) = &ui_elements.get(entity) {
+              draw_param.dest = ui_element.anchor.unwrap_or_default().get_postion(Rect::new(
+                0.0,
+                0.0,
+                screen_size.x,
+                screen_size.y,
+              ));
 
-          if let Some(dimensions) = drawable.dimensions(self.ctx) {
-            draw_param.dest -= ui_element
-              .origin
-              .unwrap_or_default()
-              .get_postion(dimensions)
-              .coords;
+              if let Some(dimensions) = drawable.dimensions(self.ctx) {
+                draw_param.dest -= ui_element
+                  .origin
+                  .unwrap_or_default()
+                  .get_postion(dimensions)
+                  .coords;
+              }
+            } else {
+              draw_param.dest =
+                world_to_screen(draw_param.dest, camera_position, camera.zoom, screen_size);
+
+              draw_param.scale = Vector2::repeat(camera.zoom);
+            }
+
+            if let Some(position) = positions.get(entity) {
+              draw_param.dest = position.0;
+            }
+
+            drawable.draw(self.ctx, draw_param).unwrap();
           }
-        } else {
-          draw_param.dest =
-            world_to_screen(draw_param.dest, camera_position, camera.zoom, screen_size);
-
-          draw_param.scale = Vector2::repeat(camera.zoom);
         }
-
-        if let Some(position) = positions.get(entity) {
-          draw_param.dest = position.0;
-        }
-
-        drawable.draw(self.ctx, draw_param).unwrap();
       }
     }
   }
