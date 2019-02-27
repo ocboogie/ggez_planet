@@ -3,6 +3,7 @@ use crate::{
     renderers::text::Text,
 };
 use ggez::{graphics::Scale, Context};
+use smart_default::SmartDefault;
 use specs::prelude::*;
 use std::time::Instant;
 
@@ -16,18 +17,11 @@ impl Component for FpsDisplay {
     type Storage = NullStorage<Self>;
 }
 
+#[derive(SmartDefault)]
 pub struct UpdateFpsDisplay {
+    #[default(Instant::now())]
     last_update: Instant,
     frames_since_last_update: usize,
-}
-
-impl Default for UpdateFpsDisplay {
-    fn default() -> Self {
-        Self {
-            last_update: Instant::now(),
-            frames_since_last_update: 0,
-        }
-    }
 }
 
 impl<'a> System<'a> for UpdateFpsDisplay {

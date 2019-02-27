@@ -8,10 +8,11 @@ use ggez::{
   nalgebra::{Point2, Vector2},
   Context,
 };
+use smart_default::SmartDefault;
 use specs::prelude::*;
 use std::collections::HashMap;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, SmartDefault)]
 pub enum Anchor {
   TopLeft,
   #[allow(dead_code)]
@@ -21,6 +22,7 @@ pub enum Anchor {
 
   #[allow(dead_code)]
   CenterLeft,
+  #[default]
   Center,
   #[allow(dead_code)]
   CenterRight,
@@ -52,12 +54,6 @@ impl Anchor {
   }
 }
 
-impl Default for Anchor {
-  fn default() -> Self {
-    Anchor::Center
-  }
-}
-
 pub struct Position(pub Point2<f32>);
 
 impl Component for Position {
@@ -70,13 +66,8 @@ impl Component for Layer {
   type Storage = VecStorage<Self>;
 }
 
-pub struct ScreenSize(pub Vector2<f32>);
-
-impl Default for ScreenSize {
-  fn default() -> Self {
-    Self(Vector2::new(SCREEN_WIDTH, SCREEN_HEIGHT))
-  }
-}
+#[derive(SmartDefault)]
+pub struct ScreenSize(#[default(Vector2::new(SCREEN_WIDTH, SCREEN_HEIGHT))] pub Vector2<f32>);
 
 #[derive(Default)]
 pub struct Fonts(pub HashMap<&'static str, Font>);

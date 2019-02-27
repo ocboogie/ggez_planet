@@ -3,6 +3,7 @@ use ggez::{
     nalgebra::{Point2, Vector2},
     Context,
 };
+use smart_default::SmartDefault;
 use specs::prelude::*;
 
 pub fn world_to_screen(
@@ -30,14 +31,10 @@ pub fn screen_to_world(
     camera_pos + view_scale
 }
 
+#[derive(SmartDefault)]
 pub struct Camera {
+    #[default(1.0)]
     pub zoom: f32,
-}
-
-impl Default for Camera {
-    fn default() -> Self {
-        Self { zoom: 1.0 }
-    }
 }
 
 impl Component for Camera {

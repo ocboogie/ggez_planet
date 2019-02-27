@@ -7,3 +7,4 @@ edition = "2018"
 [dependencies]
 ggez = { git = "https://github.com/ggez/ggez.git" }
 specs = "0.14.3"
+smart-default = "0.4.0"

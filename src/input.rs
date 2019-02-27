@@ -3,16 +3,12 @@ use ggez::{
   nalgebra::{Point2, Vector2},
   Context,
 };
+use smart_default::SmartDefault;
 use specs::prelude::*;
 use std::{collections::HashMap, hash::Hash};
 
-pub struct MousePosition(pub Point2<f32>);
-
-impl Default for MousePosition {
-  fn default() -> Self {
-    Self(Point2::new(0.0, 0.0))
-  }
-}
+#[derive(SmartDefault)]
+pub struct MousePosition(#[default(Point2::new(0.0, 0.0))] pub Point2<f32>);
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum InputState {
