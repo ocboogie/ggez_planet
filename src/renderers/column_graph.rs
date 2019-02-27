@@ -28,7 +28,7 @@ impl<'a> System<'a> for ColumnGraphRenderer {
     fn run(&mut self, data: Self::SystemData) {
         let (entities, mut renderables, column_graphs) = data;
 
-        for (entitiy, column_graph) in (&*entities, &column_graphs).join() {
+        for (entity, column_graph) in (&*entities, &column_graphs).join() {
             let image_builder = ImageBuilder::Solid {
                 size: 1,
                 color: BLACK,
@@ -46,7 +46,7 @@ impl<'a> System<'a> for ColumnGraphRenderer {
                 .collect();
 
             let _ = renderables.insert(
-                entitiy,
+                entity,
                 Renderable {
                     instruction: RenderInstruction::SpriteBatch {
                         image_builder,

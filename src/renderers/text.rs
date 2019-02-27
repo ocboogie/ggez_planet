@@ -26,9 +26,9 @@ impl<'a> System<'a> for TextRenderer {
     fn run(&mut self, data: Self::SystemData) {
         let (entities, mut renderables, texts) = data;
 
-        for (entitiy, text) in (&*entities, &texts).join() {
+        for (entity, text) in (&*entities, &texts).join() {
             let _ = renderables.insert(
-                entitiy,
+                entity,
                 Renderable {
                     instruction: RenderInstruction::Text {
                         text: text.text.clone(),
