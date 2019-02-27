@@ -1,5 +1,6 @@
 #![feature(duration_float)]
 
+mod camera_movement;
 mod debug;
 mod graphics;
 mod input;
@@ -48,6 +49,7 @@ impl<'a, 'b> MainState<'a, 'b> {
         renderers::setup(ctx, &mut world, &mut dispatcher_builder);
 
         debug::setup(ctx, &mut world, &mut dispatcher_builder);
+        camera_movement::setup(ctx, &mut world, &mut dispatcher_builder);
 
         let dispatcher = dispatcher_builder.build();
 
