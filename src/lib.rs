@@ -1,17 +1,15 @@
 #![feature(duration_float)]
 
-mod camera_movement;
-mod debug;
-mod graphics;
-mod input;
-mod renderers;
+pub mod debug;
+pub mod graphics;
+pub mod input;
+pub mod renderers;
 
 use crate::{
     graphics::{rendering::RenderingSystem, ScreenSize},
     input::{InputState, Keys, MouseButtons, MouseMotion, MousePosition, MouseWheel},
 };
 use ggez::{
-    conf::WindowMode,
     event,
     graphics::{self as ggez_graphics, Rect},
     input::{
@@ -19,28 +17,24 @@ use ggez::{
         mouse::{self, MouseButton},
     },
     nalgebra::Vector2,
-    Context, GameResult,
+    timer, Context, GameResult,
 };
-use specs::prelude::*;
-use std::time::Instant;
-
-pub static SCREEN_WIDTH: f32 = 800.0;
-pub static SCREEN_HEIGHT: f32 = 600.0;
+use specs::{prelude::*, shred::RunNow};
 
 #[derive(Default)]
 pub struct DeltaTime(pub f32);
 
-struct MainState<'a, 'b> {
+pub struct Planet<'a, 'b> {
     world: World,
     dispatcher: Dispatcher<'a, 'b>,
-    last_frame: Instant,
 }
 
-impl<'a, 'b> MainState<'a, 'b> {
-    fn new(ctx: &mut Context) -> GameResult<MainState<'a, 'b>> {
-        let mut world = specs::World::new();
-        let mut dispatcher_builder = DispatcherBuilder::new();
-
+impl<'a, 'b> Planet<'a, 'b> {
+    pub fn new(
+        ctx: &mut Context,
+        mut world: World,
+        mut dispatcher_builder: DispatcherBuilder<'a, 'b>,
+    ) -> Self {
         world.add_resource(DeltaTime::default());
 
         graphics::setup(ctx, &mut world, &mut dispatcher_builder);
@@ -49,22 +43,16 @@ impl<'a, 'b> MainState<'a, 'b> {
         renderers::setup(ctx, &mut world, &mut dispatcher_builder);
 
         debug::setup(ctx, &mut world, &mut dispatcher_builder);
-        camera_movement::setup(ctx, &mut world, &mut dispatcher_builder);
 
-        let dispatcher = dispatcher_builder.build();
-
-        Ok(MainState {
+        Self {
             world,
-            dispatcher,
-            last_frame: Instant::now(),
-        })
+            dispatcher: dispatcher_builder.build(),
+        }
     }
-}
 
-impl<'a, 'b> MainState<'a, 'b> {
-    fn update_delta_time(&mut self) {
+    fn update_delta_time(&mut self, ctx: &mut Context) {
         let mut delta = self.world.write_resource::<DeltaTime>();
-        delta.0 = self.last_frame.elapsed().as_float_secs() as f32;
+        delta.0 = timer::delta(ctx).as_float_secs() as f32;
     }
 
     fn update_mouse_position(&mut self, ctx: &mut Context) {
@@ -113,9 +101,9 @@ impl<'a, 'b> MainState<'a, 'b> {
     }
 }
 
-impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
+impl<'a, 'b> event::EventHandler for Planet<'a, 'b> {
     fn update(&mut self, ctx: &mut Context) -> GameResult {
-        self.update_delta_time();
+        self.update_delta_time(ctx);
         self.update_mouse_position(ctx);
 
         self.dispatcher.dispatch(&self.world.res);
@@ -124,8 +112,6 @@ impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
         self.update_mouse_buttons();
         self.update_mouse_motion(None);
         self.update_mouse_wheel(None);
-
-        self.last_frame = Instant::now();
 
         Ok(())
     }
@@ -184,17 +170,4 @@ impl<'a, 'b> event::EventHandler for MainState<'a, 'b> {
     fn mouse_wheel_event(&mut self, _ctx: &mut Context, x: f32, y: f32) {
         self.update_mouse_wheel(Some(Vector2::new(x, y)));
     }
-}
-
-pub fn main() -> GameResult {
-    let cb = ggez::ContextBuilder::new("super_simple", "ggez").window_mode(
-        WindowMode::default()
-            .resizable(true)
-            .dimensions(SCREEN_WIDTH, SCREEN_HEIGHT),
-    );
-    let (ctx, event_loop) = &mut cb.build()?;
-
-    let state = &mut MainState::new(ctx)?;
-
-    event::run(ctx, event_loop, state)
 }
